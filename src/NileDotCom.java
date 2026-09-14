@@ -193,10 +193,16 @@ public class NileDotCom extends JFrame implements ActionListener {
             return;
         }
 
+        //check for negative
+        if( requestedQuantity <=0) {
+            JOptionPane.showMessageDialog(this, "Please Enter A Valid Quantity.", "Invalid Quantity", JOptionPane.ERROR_MESSAGE);
+
+        }
+
         boolean itemFound = false;
 
         //read text
-        try (BufferedReader reader = new BufferedReader(new FileReader("inventory.csv)")))
+        try (BufferedReader reader = new BufferedReader(new FileReader("inventory.csv")))
         {
             String line;
             while ((line = reader.readLine()) !=null) {
