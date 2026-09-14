@@ -268,7 +268,7 @@ public class NileDotCom extends JFrame implements ActionListener {
             System.exit(0);
         }
         else if(event.getSource() == searchButton) {
-            System.out.println("Search button clicked");
+            searchForItem();
         }
         else if(event.getSource() == addButton) {
             System.out.println("Add Button clicked");
