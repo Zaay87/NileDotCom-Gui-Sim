@@ -179,6 +179,89 @@ public class NileDotCom extends JFrame implements ActionListener {
         }
     }
 
+    //parse through inventory.csv for item searched
+    private void searchForItem() {
+        String enteredId = itemIdField.getText().trim();
+        String quantityText = quantityField.getText().trim();
+        int requestedQuantity;
+
+        try {
+            requestedQuantity = Integer.parseInt(quantityText);
+        }
+        catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this, "Please Enter A Valid Quantity.", "Invalid Quantity", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        boolean itemFound = false;
+
+        //read text
+        try (BufferedReader reader = new BufferedReader(new FileReader("inventory.csv)")))
+        {
+            String line;
+            while ((line = reader.readLine()) !=null) {
+                String[] parts = line.split(",");
+                String id = parts[0].trim();
+
+                if(id.equals(enteredId)) {
+                    itemFound = true;
+                    String description = parts[1].trim().replace("\"","");
+                    boolean inStock = Boolean.parseBoolean(parts[2].trim());
+                    int quantityOnHand = Integer.parseInt(parts[3].trim());
+                    double price = Double.parseDouble(parts[4].trim());
+
+                    //Out of Stock
+                    if(!inStock) {
+                        JOptionPane.showMessageDialog(this,"Sorry, That item is out of stock", "Nile Dot Com - ERROR", JOptionPane.ERROR_MESSAGE);
+                        itemIdField.setText("");
+                        quantityField.setText("");
+                        return;
+
+                    }
+
+                    //Low Inventory
+                    if (requestedQuantity > quantityOnHand) {
+                        JOptionPane.showMessageDialog(this, "Insufficient Stock. Only " + quantityOnHand + "available.", "Nile Dot Com - ERROR", JOptionPane.ERROR_MESSAGE);
+                        quantityField.setText("");
+                        return;
+                    }
+
+                    //Item good
+                    currentItemId = id;
+                    currentItemDescription = description;
+                    currentItemQuantity = requestedQuantity;
+                    currentItemPrice = price;
+                    currentItemDiscount = getDiscount(requestedQuantity);
+                    currentItemTotal = (price * requestedQuantity) * (1-currentItemDiscount);
+
+                    detailsField.setText(currentItemId + " " +currentItemDescription + " $" +String.format("%.2f", currentItemPrice) + " " +currentItemQuantity +" " + String.format("%.0f%%", currentItemDiscount * 100) + " $" + String.format("%.2f", currentItemTotal));
+
+                    searchButton.setEnabled(false);
+                    addButton.setEnabled(true);
+
+                    return;
+                }
+
+            }
+
+            // Item not Found
+            if(!itemFound) {
+                JOptionPane.showMessageDialog(this, "Item ID "+ enteredId + " not found", "Nile Dot Com - ERROR", JOptionPane.ERROR_MESSAGE);
+
+                itemIdField.setText("");
+                quantityField.setText("");
+            }
+
+        }
+
+        catch (IOException e) {
+            JOptionPane.showMessageDialog(this, "Error reading inventory.csv", "File Error", JOptionPane.ERROR_MESSAGE);
+
+        }
+    }
+
+
+
     @Override
     public void actionPerformed(ActionEvent event) {
         if(event.getSource() == exitButton) {
@@ -200,6 +283,7 @@ public class NileDotCom extends JFrame implements ActionListener {
             System.out.println("Empty cart button pressed");
         }
     }
+
 }
 
 
