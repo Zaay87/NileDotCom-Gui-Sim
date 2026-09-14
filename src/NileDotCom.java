@@ -8,6 +8,9 @@ Date: Sunday, Sept 13, 2026
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 
 public class NileDotCom extends JFrame implements ActionListener {
 
@@ -41,6 +44,12 @@ public class NileDotCom extends JFrame implements ActionListener {
 
     //Tracking for which item number is being worked on
     private int itemNumber = 1;
+    private String currentItemId;
+    private String currentItemDescription;
+    private int currentItemQuantity;
+    private double currentItemPrice;
+    private double currentItemDiscount;
+    private double currentItemTotal;
 
     public NileDotCom() {
 
@@ -152,6 +161,22 @@ public class NileDotCom extends JFrame implements ActionListener {
         emptyButton.setEnabled(true);
         exitButton.setEnabled(true);
 
+    }
+
+    //Discounts based on quantity
+    private double getDiscount(int quantity) {
+        if(quantity >=15) {
+            return 0.20;
+        }
+        else if(quantity >=10) {
+            return 0.15;
+        }
+        else if(quantity >=5) {
+            return 0.10;
+        }
+        else {
+            return 0.00;
+        }
     }
 
     @Override
