@@ -359,11 +359,11 @@ public class NileDotCom extends JFrame implements ActionListener {
     private void updateCartDisplay() {
         StringBuilder cartText = new StringBuilder();
 
-        for (int i=0; i< cart.size(); i++) {
+        for (int i = 0; i < cart.size(); i++) {
             CartItem item = cart.get(i);
 
             cartText.append("Item ")
-                    .append(i+1)
+                    .append(i + 1)
                     .append("- SKU: ")
                     .append(item.id)
                     .append(", Desc: \"")
@@ -376,7 +376,6 @@ public class NileDotCom extends JFrame implements ActionListener {
                     .append(String.format("%.2f", item.total))
                     .append("\n");
         }
-
         cartArea.setText(cartText.toString());
 
         if(cart.isEmpty()) {
@@ -386,7 +385,65 @@ public class NileDotCom extends JFrame implements ActionListener {
         else {
             cartTitleLabel.setText("Your Shopping Cart Currently Contains " + cart.size() + " Item(s)");
         }
+
     }
+    private void deleteLastItem() {
+
+        //Make sure there is something to delete
+        if (cart.isEmpty()) {
+            return;
+        }
+
+        //Remove the last item from the cart
+        CartItem removedItem = cart.remove(cart.size() - 1);
+
+        //Subtract item's total from order subtotal
+        orderSubtotal -= removedItem.total;
+
+        //rounding for errors
+        if (orderSubtotal < 0.01) {
+            orderSubtotal = 0.0;
+        }
+
+        //The next item number is cart size + 1
+        itemNumber = cart.size() + 1;
+
+        //Clear the input fields
+        itemIdField.setText("");
+        quantityField.setText("");
+        detailsField.setText("");
+
+        //Update labels
+        itemIdLabel.setText("Enter item ID for item #" + itemNumber);
+        quantityLabel.setText("Enter quantity for item #" + itemNumber);
+        detailsLabel.setText("Details for item #" + itemNumber);
+        subtotalLabel.setText("Subtotal for " + cart.size() + " item(s)");
+
+        //Update subtotal display
+        subtotalField.setText("$" + String.format("%.2f", orderSubtotal));
+
+        //Update button text
+        searchButton.setText("Search For Item #" + itemNumber);
+        addButton.setText("Add Item #" + itemNumber + " To Cart");
+
+        //Refresh shopping cart display
+        updateCartDisplay();
+
+        //Search ready for the next item
+        searchButton.setEnabled(true);
+        addButton.setEnabled(false);
+
+        //If cart is empty disable Delete and Checkout
+        if (cart.isEmpty()) {
+            deleteButton.setEnabled(false);
+            checkoutButton.setEnabled(false);
+        }
+        else {
+            deleteButton.setEnabled(true);
+            checkoutButton.setEnabled(true);
+        }
+    }
+
 
     @Override
     public void actionPerformed(ActionEvent event) {
@@ -400,7 +457,7 @@ public class NileDotCom extends JFrame implements ActionListener {
             addItemToCart();
         }
         else if(event.getSource() == deleteButton) {
-            System.out.println("Delete Button clicked");
+            deleteLastItem();
         }
         else if(event.getSource() == checkoutButton) {
             System.out.println("Checkout button clicked");
