@@ -12,6 +12,11 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.io.FileWriter;
+import java.io.PrintWriter;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
 public class NileDotCom extends JFrame implements ActionListener {
 
@@ -226,7 +231,7 @@ public class NileDotCom extends JFrame implements ActionListener {
         }
 
         //check for negative
-        if( requestedQuantity <=0) {
+        if(requestedQuantity <=0) {
             JOptionPane.showMessageDialog(this, "Please Enter A Valid Quantity.", "Invalid Quantity", JOptionPane.ERROR_MESSAGE);
             quantityField.setText("");
             return;
@@ -260,7 +265,7 @@ public class NileDotCom extends JFrame implements ActionListener {
                     }
 
                     //Low Inventory
-                    if (requestedQuantity > quantityOnHand) {
+                    if(requestedQuantity > quantityOnHand) {
                         JOptionPane.showMessageDialog(this, "Insufficient Stock. Only " + quantityOnHand + "available.", "Nile Dot Com - ERROR", JOptionPane.ERROR_MESSAGE);
                         quantityField.setText("");
                         return;
@@ -361,21 +366,9 @@ public class NileDotCom extends JFrame implements ActionListener {
 
         for (int i = 0; i < cart.size(); i++) {
             CartItem item = cart.get(i);
-
-            cartText.append("Item ")
-                    .append(i + 1)
-                    .append("- SKU: ")
-                    .append(item.id)
-                    .append(", Desc: \"")
-                    .append(item.description)
-                    .append("\", Price Ea. $")
-                    .append(String.format("%.2f", item.price))
-                    .append(", Qty: ")
-                    .append(item.quantity)
-                    .append(", Total: $")
-                    .append(String.format("%.2f", item.total))
-                    .append("\n");
+            cartText.append("Item ").append(i + 1).append("- SKU: ").append(item.id).append(", Desc: \"").append(item.description).append("\", Price Ea. $").append(String.format("%.2f", item.price)).append(", Qty: ").append(item.quantity).append(", Total: $").append(String.format("%.2f", item.total)).append("\n");
         }
+
         cartArea.setText(cartText.toString());
 
         if(cart.isEmpty()) {
@@ -390,7 +383,7 @@ public class NileDotCom extends JFrame implements ActionListener {
     private void deleteLastItem() {
 
         //Make sure there is something to delete
-        if (cart.isEmpty()) {
+        if(cart.isEmpty()) {
             return;
         }
 
@@ -401,7 +394,7 @@ public class NileDotCom extends JFrame implements ActionListener {
         orderSubtotal -= removedItem.total;
 
         //rounding for errors
-        if (orderSubtotal < 0.01) {
+        if(orderSubtotal < 0.01) {
             orderSubtotal = 0.0;
         }
 
@@ -434,7 +427,7 @@ public class NileDotCom extends JFrame implements ActionListener {
         addButton.setEnabled(false);
 
         //If cart is empty disable Delete and Checkout
-        if (cart.isEmpty()) {
+        if(cart.isEmpty()) {
             deleteButton.setEnabled(false);
             checkoutButton.setEnabled(false);
         }
@@ -442,6 +435,117 @@ public class NileDotCom extends JFrame implements ActionListener {
             deleteButton.setEnabled(true);
             checkoutButton.setEnabled(true);
         }
+    }
+
+    private void checkout() {
+        if(cart.isEmpty()) {
+            return;
+        }
+
+        //Current time and date
+        ZonedDateTime now = ZonedDateTime.now();
+
+        //Unique transaction ID
+        DateTimeFormatter transactionIdFormat = DateTimeFormatter.ofPattern("ddMMyyyyHHmmss");
+        String transactionId = now.format(transactionIdFormat);
+
+        //Date shown on transaction file
+        DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("MMMM d, yyyy, h:mm:ss a z", Locale.US);
+        String dateString = now.format(dateFormat);
+
+        //Tax
+        double taxRate = 0.06;
+        double taxAmount = orderSubtotal * taxRate;
+        double orderTotal = orderSubtotal + taxAmount;
+
+        //invoice
+        StringBuilder invoice = new StringBuilder();
+        invoice.append("Date: ").append(dateString).append("\n\n");
+        invoice.append("Number of line Items: ").append(cart.size()).append("\n\n");
+        invoice.append("Item# / ID / Title / Price / Qty / Dis% / Subtotal:\n\n");
+
+        //Add cart items to invoice
+        for (int i=0; i<cart.size(); i++) {
+            CartItem item = cart.get(i);
+
+            invoice.append(i + 1).append(". ").append(item.id).append(" \"").append(item.description).append("\" $").append(String.format("%.2f", item.price)).append(" ").append(item.quantity).append(" ").append(String.format("%.0f%%", item.discount * 100)).append(" $").append(String.format("%.2f", item.total)).append("\n");
+        }
+        invoice.append("\n");
+        invoice.append("Order Subtotal:   $").append(String.format("%.2f", orderSubtotal)).append("\n\n");
+        invoice.append("Tax rate:         6%\n\n");
+        invoice.append("Tax amount:       $").append(String.format("%.2f", taxAmount)).append("\n\n");
+        invoice.append("ORDER TOTAL:      $").append(String.format("%.2f", orderTotal)).append("\n\n");
+        invoice.append("Thanks for shopping at Nile Dot Com!");
+
+        //Write to transaction file
+        writeTransactions(transactionId,dateString);
+
+        //Display final invoice
+        JOptionPane.showMessageDialog(this, invoice.toString(),"Nile Dot Com - Final Invoice", JOptionPane.INFORMATION_MESSAGE);
+
+        //Update buttons at end
+        itemIdField.setEditable(false);
+        quantityField.setEditable(false);
+        searchButton.setEnabled(false);
+        addButton.setEnabled(false);
+        deleteButton.setEnabled(false);
+        checkoutButton.setEnabled(false);
+        emptyButton.setEnabled(true);
+        exitButton.setEnabled(true);
+
+
+    }
+
+    private void writeTransactions(String transactionId, String dateString) {
+
+        try (PrintWriter writer = new PrintWriter(new FileWriter("transactions.csv", true))) {
+            for (CartItem item : cart) {
+                writer.println(transactionId + ", " + item.id + ", \"" + item.description + "\", " + String.format("%.2f", item.price) + ", " + item.quantity + ", " + String.format("%.1f", item.discount) + ", $" + String.format("%.2f", item.total) + ", " + dateString);
+            }
+        }
+        catch (IOException e) {
+            JOptionPane.showMessageDialog(this, "Error writing to transactions.csv", "File Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    private void startNewOrder() {
+
+        //Clear cart
+        cart.clear();
+
+        //Reset values
+        orderSubtotal = 0.0;
+        itemNumber = 1;
+        currentItemId = null;
+        currentItemDescription = null;
+        currentItemQuantity = 0;
+        currentItemPrice = 0.0;
+        currentItemDiscount = 0.0;
+        currentItemTotal = 0.0;
+
+        //Clear all fields
+        itemIdField.setText("");
+        quantityField.setText("");
+        detailsField.setText("");
+        subtotalField.setText("");
+        cartArea.setText("");
+
+        //Make input fields editable
+        itemIdField.setEditable(true);
+        quantityField.setEditable(true);
+
+        //Reset labels
+        itemIdLabel.setText("Enter item ID for item #1:");
+        quantityLabel.setText("Enter quantity for item #1:");
+        detailsLabel.setText("Details for item #1:");
+        subtotalLabel.setText("Current Subtotal for 0 item(s):");
+        cartTitleLabel.setText("Your Shopping Cart Is Currently Empty");
+
+        //Reset button names
+        searchButton.setText("Search For Item #1");
+        addButton.setText("Add Item #1 To Cart");
+
+        //Reset button states
+        setInitialState();
     }
 
 
@@ -460,10 +564,10 @@ public class NileDotCom extends JFrame implements ActionListener {
             deleteLastItem();
         }
         else if(event.getSource() == checkoutButton) {
-            System.out.println("Checkout button clicked");
+            checkout();
         }
         else if(event.getSource() == emptyButton) {
-            System.out.println("Empty cart button pressed");
+            startNewOrder();
         }
     }
 
